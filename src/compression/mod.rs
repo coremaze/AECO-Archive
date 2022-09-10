@@ -75,10 +75,36 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pack_matches_unpack() {
+    fn pack_matches_unpack1() {
         let original_data = (0..1_000_000)
             .map(|x| (x & 0xFF) as u8)
             .collect::<Vec<u8>>();
+
+        let compressed = match pack(&original_data) {
+            Ok(x) => x,
+            Err(why) => {
+                assert!(false, "Compression error: {:?}", why);
+                return;
+            }
+        };
+
+        let uncompressed = match unpack_sized(&compressed, original_data.len()) {
+            Ok(x) => x,
+            Err(why) => {
+                assert!(false, "Decompression error: {:?}", why);
+                return;
+            }
+        };
+
+        assert_eq!(
+            original_data, uncompressed,
+            "Original data does not match uncompressed result"
+        );
+    }
+
+    #[test]
+    fn pack_matches_unpack2() {
+        let original_data = include_bytes!("mod.rs").to_vec();
 
         let compressed = match pack(&original_data) {
             Ok(x) => x,
