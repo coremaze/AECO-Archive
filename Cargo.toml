@@ -2,6 +2,11 @@
 name = "aeco-archive"
 version = "0.1.0"
 edition = "2021"
+build = "src/build.rs"
+
+[build-dependencies]
+bindgen = "0.60.1"
+cc = { version = "1.0", features = ["parallel"] }
 
 [dependencies]
 byteorder = "1.4.3"

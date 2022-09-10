@@ -5,16 +5,16 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub struct HED {
-    entries: Vec<HEDEntry>,
+    pub entries: Vec<HEDEntry>,
 }
 
 #[derive(Debug)]
 pub struct HEDEntry {
-    packed: bool,
+    pub packed: bool,
     // Normally file offsets should be u64, but only u32s are supported by the format.
-    start: u32,
-    packed_len: u32,
-    unpacked_len: u32,
+    pub start: u32,
+    pub packed_len: u32,
+    pub unpacked_len: u32,
 }
 
 impl HED {
