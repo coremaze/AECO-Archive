@@ -9,7 +9,7 @@ pub enum Error {
     ReturnCode(i32),
 }
 
-pub fn unpack_to_buf(src_data: &[u8], dest_data: &mut [u8]) -> Result<(), Error> {
+pub fn unpack_to_buf(src_data: &[u8], dest_data: &mut [u8]) -> Result<usize, Error> {
     if src_data.len() >= u32::MAX as usize {
         return Err(Error::InputTooLarge);
     }
@@ -18,18 +18,20 @@ pub fn unpack_to_buf(src_data: &[u8], dest_data: &mut [u8]) -> Result<(), Error>
         return Err(Error::OutputTooLarge);
     }
 
-    let return_code = unsafe {
+    let (return_code, dest_size) = unsafe {
         let src: *const u8 = src_data.as_ptr();
         let src_size = src_data.len() as u32;
 
         let mut dest: *mut u8 = dest_data.as_mut_ptr();
         let mut dest_size: u32 = dest_data.len() as u32;
 
-        bindings::Unpack(src, src_size, &mut dest, &mut dest_size)
+        let return_code = bindings::Unpack(src, src_size, &mut dest, &mut dest_size);
+
+        (return_code, dest_size as usize)
     };
 
     if return_code == 0 {
-        Ok(())
+        Ok(dest_size)
     } else {
         Err(Error::ReturnCode(return_code))
     }
@@ -38,7 +40,9 @@ pub fn unpack_to_buf(src_data: &[u8], dest_data: &mut [u8]) -> Result<(), Error>
 pub fn unpack_sized(src_data: &[u8], size: usize) -> Result<Vec<u8>, Error> {
     let mut dest_data = vec![0u8; size as usize];
 
-    unpack_to_buf(src_data, &mut dest_data)?;
+    let dest_size = unpack_to_buf(src_data, &mut dest_data)?;
+
+    dest_data.truncate(dest_size);
 
     Ok(dest_data)
 }
