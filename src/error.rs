@@ -11,5 +11,8 @@ pub enum ArchiveError {
     OffsetError,
     LengthError,
     UnpackError,
+    PackError,
     FileNotPresentError,
+    SerializeError,
+    FileStateError,
 }

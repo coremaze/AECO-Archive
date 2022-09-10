@@ -1,7 +1,8 @@
 use crate::*;
 use std::{
+    convert::TryInto,
     io::Seek,
-    io::{Read, SeekFrom},
+    io::{Read, SeekFrom, Write},
     path::{Path, PathBuf},
 };
 
@@ -66,6 +67,44 @@ impl Archive {
         Ok(result_buf)
     }
 
+    fn write_dat_block<P>(dat_path: P, data: &[u8], packed: bool) -> Result<HEDEntry, ArchiveError>
+    where
+        P: AsRef<Path>,
+    {
+        let unpacked_len = data.len();
+        let packed_data = if packed {
+            compression::pack(data).map_err(|_| ArchiveError::PackError)?
+        } else {
+            data.to_vec()
+        };
+        let packed_len = packed_data.len();
+
+        let mut out_file = std::fs::OpenOptions::new()
+            .write(true)
+            .append(true)
+            .create(true)
+            .open(dat_path)
+            .map_err(|_| ArchiveError::DATWriteError)?;
+
+        let start = out_file
+            .seek(SeekFrom::End(0))
+            .map_err(|_| ArchiveError::HEDWriteError)?;
+        out_file
+            .write_all(&packed_data)
+            .map_err(|_| ArchiveError::HEDWriteError)?;
+
+        Ok(HEDEntry {
+            packed,
+            start: start.try_into().map_err(|_| ArchiveError::OffsetError)?,
+            packed_len: packed_len
+                .try_into()
+                .map_err(|_| ArchiveError::LengthError)?,
+            unpacked_len: unpacked_len
+                .try_into()
+                .map_err(|_| ArchiveError::LengthError)?,
+        })
+    }
+
     pub fn file_names(&self) -> &[String] {
         &self.file_names
     }
@@ -97,5 +136,56 @@ impl Archive {
             .ok_or(ArchiveError::HEDFormatError)?;
 
         Self::read_dat_block(&self.dat_path, hed_entry)
+    }
+
+    pub fn remove_file(&mut self, file_name: &str) {
+        let mut indices_to_remove = Vec::<usize>::new();
+
+        // Find the index or indices with this file name
+        for (i, name) in self.file_names.iter().enumerate() {
+            if name == file_name {
+                indices_to_remove.push(i);
+            }
+        }
+
+        // Remove the file name and its entry
+        for i in indices_to_remove {
+            self.file_names.remove(i);
+            self.hed.remove_entry(i + 1); // 0 is reserved for file list
+        }
+    }
+
+    pub fn add_file(&mut self, file_name: &str, data: &[u8]) -> Result<(), ArchiveError> {
+        // Make sure no duplicate files are made
+        self.remove_file(file_name);
+
+        // These should always correspond to each other, with there being 1 more
+        // entry for the list of file names saved to disk.
+        if self.hed.entries.len() != self.file_names.len() + 1 {
+            println!("{} {}", self.hed.entries.len(), self.file_names.len());
+            return Err(ArchiveError::FileStateError);
+        }
+
+        // Write file contents to DAT
+        let file_entry = Self::write_dat_block(&self.dat_path, data, true)?;
+
+        self.hed.entries.push(file_entry);
+        self.file_names.push(file_name.to_string());
+
+        Ok(())
+    }
+
+    pub fn finalize(&mut self) -> Result<(), ArchiveError> {
+        // Add new file name list
+        let serialized_names = dat::serialize_file_names(&self.file_names)?;
+        let file_list_entry = Self::write_dat_block(&self.dat_path, &serialized_names, true)?;
+
+        // Update HED
+        self.hed.set_files_entry(&file_list_entry);
+
+        // Write HED
+        self.hed.write(&self.hed_path)?;
+
+        Ok(())
     }
 }

@@ -63,6 +63,13 @@ pub fn pack(src_data: &[u8]) -> Result<Vec<u8>, Error> {
         // Its return code does not indicate success or failure.
         bindings::Pack(src, src_size, &mut dest, &mut dest_size);
 
+        // If the result is larger than an i32, there will be no room for
+        // the bit in the HED file to indicate that the data is packed.
+        if dest_size > i32::MAX as u32 {
+            bindings::PackFree(dest);
+            return Err(Error::OutputTooLarge);
+        }
+
         let mut target_vec = vec![0u8; dest_size as usize];
         std::ptr::copy_nonoverlapping(dest, target_vec.as_mut_ptr(), dest_size as usize);
 
