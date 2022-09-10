@@ -1,7 +1,15 @@
 #[derive(Debug)]
 pub enum ArchiveError {
-    ReadError,
-    CreateError,
-    WriteError,
-    FormatError,
+    HEDReadError,
+    HEDCreateError,
+    HEDWriteError,
+    HEDFormatError,
+    DATReadError,
+    DATCreateError,
+    DATWriteError,
+    NamesFormatError,
+    OffsetError,
+    LengthError,
+    UnpackError,
+    FileNotPresentError,
 }
