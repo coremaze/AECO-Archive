@@ -24,19 +24,19 @@ impl HED {
     {
         // Create file if it doesn't exist yet
         if !path.as_ref().exists() {
-            std::fs::File::create(&path).or_else(|_| Err(ArchiveError::ReadError))?;
+            std::fs::File::create(&path).map_err(|_| ArchiveError::ReadError)?;
         }
 
         // Read existing file
-        let data = std::fs::read(&path).or_else(|_| Err(ArchiveError::ReadError))?;
+        let data = std::fs::read(&path).map_err(|_| ArchiveError::ReadError)?;
         let data_len = data.len() as u64;
 
         let mut cursor = Cursor::new(data);
         let mut entries = Vec::<HEDEntry>::with_capacity(3 * (u32::BITS / u8::BITS) as usize);
 
         while cursor.position() < data_len {
-            let entry = HED::try_deserialize_entry(&mut cursor)
-                .or_else(|_| Err(ArchiveError::FormatError))?;
+            let entry =
+                HED::try_deserialize_entry(&mut cursor).map_err(|_| ArchiveError::FormatError)?;
             entries.push(entry);
         }
 
