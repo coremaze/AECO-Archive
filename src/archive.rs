@@ -23,8 +23,14 @@ impl Archive {
 
         // Names are always the first element in HED entries
         let names_entry = hed.entries.get(0).ok_or(ArchiveError::HEDFormatError)?;
-        let names_serialized = Self::read_dat_block(&dat_path, names_entry)?;
-        let file_names = dat::deserialize_file_names(&names_serialized)?;
+
+        // If the file was just created, there won't be anything to read here.
+        let file_names = if !names_entry.is_end_marker() && hed.entries.len() > 1 {
+            let names_serialized = Self::read_dat_block(&dat_path, names_entry)?;
+            dat::deserialize_file_names(&names_serialized)?
+        } else {
+            Vec::<String>::new()
+        };
 
         Ok(Self {
             dat_path: dat_path.as_ref().to_path_buf(),

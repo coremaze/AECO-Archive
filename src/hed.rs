@@ -38,27 +38,35 @@ impl HED {
         P: AsRef<Path>,
     {
         // Create file if it doesn't exist yet
-        if !path.as_ref().exists() {
+        let is_file_new = if !path.as_ref().exists() {
             std::fs::File::create(&path).map_err(|_| ArchiveError::HEDReadError)?;
-        }
+            true
+        } else {
+            false
+        };
 
         // Read existing file
         let data = std::fs::read(&path).map_err(|_| ArchiveError::HEDReadError)?;
         let data_len = data.len() as u64;
 
-        let mut cursor = Cursor::new(data);
         let mut entries = Vec::<HEDEntry>::with_capacity((data_len / 12) as usize);
 
-        loop {
-            let entry = HED::try_deserialize_entry(&mut cursor)
-                .map_err(|_| ArchiveError::HEDFormatError)?;
+        // There will be nothing to deserialize if the file was just made
+        if !is_file_new {
+            let mut cursor = Cursor::new(data);
+            loop {
+                let entry = HED::try_deserialize_entry(&mut cursor)
+                    .map_err(|_| ArchiveError::HEDFormatError)?;
 
-            // The end is signified with an empty entry
-            if entry.is_end_marker() {
-                break;
+                // The end is signified with an empty entry
+                if entry.is_end_marker() {
+                    break;
+                }
+
+                entries.push(entry);
             }
-
-            entries.push(entry);
+        } else {
+            entries.push(HEDEntry::end_marker());
         }
 
         Ok(Self { entries })
