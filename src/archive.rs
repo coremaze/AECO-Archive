@@ -17,7 +17,6 @@ pub struct Archive {
 }
 
 impl Archive {
-
     /// Opens an archive given its .dat and .hed files.
     pub fn open_pair<P>(dat_path: P, hed_path: P) -> Result<Self, ArchiveError>
     where
@@ -128,7 +127,7 @@ impl Archive {
     }
 
     /// Gets a file from a loaded archive by name.
-    /// If the given file is not present in the archive, 
+    /// If the given file is not present in the archive,
     /// an `Err(ArchiveError::FileNotPresentError)` will be returned.
     pub fn get_file(&self, file_name: &str) -> Result<Vec<u8>, ArchiveError> {
         let mut hed_file_index: Option<usize> = None;
@@ -253,7 +252,7 @@ impl Archive {
         }
 
         // Save to disk
-        new_archive.finalize();
+        new_archive.finalize()?;
 
         // Copy fresh archive to original location
         std::fs::copy(&tmp_dat.path(), &self.dat_path).map_err(|_| ArchiveError::DATWriteError)?;
@@ -266,5 +265,53 @@ impl Archive {
         self.file_names = file_names;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn add_and_read_files() {
+        // Paths for the archive components
+        let dat = tempfile::NamedTempFile::new().unwrap();
+        let hed = tempfile::NamedTempFile::new().unwrap();
+
+        // Files to go in the archive
+        let mut files = HashMap::<String, Vec<u8>>::new();
+        files.insert("filename.txt".to_string(), vec![0, 1, 2, 3, 4, 5]);
+        files.insert(
+            "archive.rs".to_string(),
+            include_bytes!("archive.rs").to_vec(),
+        );
+        files.insert(
+            "a test file".to_string(),
+            "This test file is pretty cool".as_bytes().to_vec(),
+        );
+
+        // Create the archive
+        let mut archive = Archive::open_pair(dat, hed).unwrap();
+
+        // Put the test files in the archive
+        for (file_name, data) in &files {
+            archive.add_file(file_name, data).unwrap();
+        }
+
+        // Save the archive
+        archive.finalize().unwrap();
+
+        // Retrieve each of the files from the archive and make sure they have
+        // not changed
+        for file_name in archive.file_names() {
+            let stored_file_data = archive.get_file(file_name).unwrap();
+            let original_file_data = files.get(file_name).unwrap();
+
+            assert_eq!(
+                &stored_file_data, original_file_data,
+                "Stored file data does not match the data which was originally put in"
+            );
+        }
     }
 }
