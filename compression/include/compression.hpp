@@ -1,5 +1,4 @@
-class Compressor
-{
+class Compressor {
 public:
     unsigned int field_0[8192];
     unsigned char gap8000[9220];
@@ -48,8 +47,7 @@ public:
     int sub_10001BBB(signed int a2);
 };
 
-extern "C"
-{
+extern "C" {
     int Unpack(const unsigned char *src, unsigned int src_size, unsigned char **dest, unsigned int *dest_size);
     int Pack(const unsigned char *src, unsigned int src_size, unsigned char **dest, unsigned int *dest_size);
     void PackFree(unsigned char *mem);
