@@ -21,7 +21,7 @@ fn main() {
     let out = &args.output_dir;
 
     if let Err(why) = std::fs::create_dir(out) {
-        eprintln!("Unable to create output dir: {}", why.to_string());
+        eprintln!("Unable to create output dir: {}", why);
         return;
     }
 
@@ -38,7 +38,7 @@ fn main() {
         path.push(&out);
         path.push(&file);
 
-        let data = match archive.get_file(&file) {
+        let data = match archive.get_file(file) {
             Ok(x) => x,
             Err(why) => {
                 eprintln!("Failed to extract {file}: {why:?}");
@@ -48,7 +48,7 @@ fn main() {
 
         match std::fs::write(&path, data) {
             Ok(_) => println!("Extracted and wrote {file}"),
-            Err(why) => eprintln!("Failed to write {file}: {}", why.to_string()),
+            Err(why) => eprintln!("Failed to write {file}: {}", why),
         }
     }
 }
