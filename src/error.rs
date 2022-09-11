@@ -15,4 +15,5 @@ pub enum ArchiveError {
     FileNotPresentError,
     SerializeError,
     FileStateError,
+    TempFileCreateError,
 }

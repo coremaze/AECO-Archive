@@ -20,7 +20,20 @@ impl Archive {
         P: AsRef<Path>,
     {
         let hed = HED::new(&hed_path)?;
+        let file_names = Self::parse_file_names(&hed, &dat_path)?;
 
+        Ok(Self {
+            dat_path: dat_path.as_ref().to_path_buf(),
+            hed_path: hed_path.as_ref().to_path_buf(),
+            hed,
+            file_names,
+        })
+    }
+
+    fn parse_file_names<P>(hed: &HED, dat_path: P) -> Result<Vec<String>, ArchiveError>
+    where
+        P: AsRef<Path>,
+    {
         // Names are always the first element in HED entries
         let names_entry = hed.entries.get(0).ok_or(ArchiveError::HEDFormatError)?;
 
@@ -32,12 +45,7 @@ impl Archive {
             Vec::<String>::new()
         };
 
-        Ok(Self {
-            dat_path: dat_path.as_ref().to_path_buf(),
-            hed_path: hed_path.as_ref().to_path_buf(),
-            hed,
-            file_names,
-        })
+        Ok(file_names)
     }
 
     fn read_dat_block<P>(dat_path: P, hed_entry: &HEDEntry) -> Result<Vec<u8>, ArchiveError>
@@ -191,6 +199,53 @@ impl Archive {
 
         // Write HED
         self.hed.write(&self.hed_path)?;
+
+        Ok(())
+    }
+
+    pub fn utilized_space(&self) -> Result<(u64, u64), ArchiveError> {
+        let total_packed_space = self
+            .hed
+            .entries
+            .iter()
+            .map(|entry| entry.packed_len as u64)
+            .sum();
+        let mut dat_file =
+            std::fs::File::open(&self.dat_path).map_err(|_| ArchiveError::DATReadError)?;
+        let size = dat_file
+            .seek(SeekFrom::End(0))
+            .map_err(|_| ArchiveError::OffsetError)?;
+
+        Ok((total_packed_space, size))
+    }
+
+    pub fn defrag(&mut self) -> Result<(), ArchiveError> {
+        // Make a new temporary archive
+        let tmp_dat =
+            tempfile::NamedTempFile::new().map_err(|_| ArchiveError::TempFileCreateError)?;
+        let tmp_hed =
+            tempfile::NamedTempFile::new().map_err(|_| ArchiveError::TempFileCreateError)?;
+
+        let mut new_archive = Self::open_pair(&tmp_dat, &tmp_hed)?;
+
+        // Add the files from this archive to the new archive
+        for file_name in &self.file_names {
+            let data = self.get_file(file_name)?;
+            new_archive.add_file(file_name, &data)?;
+        }
+
+        // Save to disk
+        new_archive.finalize();
+
+        // Copy fresh archive to original location
+        std::fs::copy(&tmp_dat.path(), &self.dat_path).map_err(|_| ArchiveError::DATWriteError)?;
+        std::fs::copy(&tmp_hed.path(), &self.hed_path).map_err(|_| ArchiveError::HEDWriteError)?;
+
+        // Update original archive state
+        let hed = HED::new(&self.hed_path)?;
+        let file_names = Self::parse_file_names(&hed, &self.dat_path)?;
+        self.hed = hed;
+        self.file_names = file_names;
 
         Ok(())
     }
