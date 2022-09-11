@@ -8,3 +8,9 @@ edition = "2021"
 [dependencies]
 clap = { version = "3.2.20", features = ["derive"] }
 aeco-archive = { path = "../" }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
