@@ -6,6 +6,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Represents a relationship between the .dat and .hed components of an
+/// archive.
 #[derive(Debug)]
 pub struct Archive {
     dat_path: PathBuf,
@@ -15,6 +17,8 @@ pub struct Archive {
 }
 
 impl Archive {
+
+    /// Opens an archive given its .dat and .hed files.
     pub fn open_pair<P>(dat_path: P, hed_path: P) -> Result<Self, ArchiveError>
     where
         P: AsRef<Path>,
@@ -123,6 +127,9 @@ impl Archive {
         &self.file_names
     }
 
+    /// Gets a file from a loaded archive by name.
+    /// If the given file is not present in the archive, 
+    /// an `Err(ArchiveError::FileNotPresentError)` will be returned.
     pub fn get_file(&self, file_name: &str) -> Result<Vec<u8>, ArchiveError> {
         let mut hed_file_index: Option<usize> = None;
 
@@ -152,6 +159,8 @@ impl Archive {
         Self::read_dat_block(&self.dat_path, hed_entry)
     }
 
+    /// Removes a file from the archive by name.
+    /// `finalize()` must be called to save the changes to disk.
     pub fn remove_file(&mut self, file_name: &str) {
         let mut indices_to_remove = Vec::<usize>::new();
 
@@ -169,6 +178,9 @@ impl Archive {
         }
     }
 
+    /// Adds a file to the archive given its name and data.
+    /// This immediately outputs data to the associated .dat file.
+    /// `finalize()` must be called to save metadata to disk.
     pub fn add_file(&mut self, file_name: &str, data: &[u8]) -> Result<(), ArchiveError> {
         // Make sure no duplicate files are made
         self.remove_file(file_name);
@@ -189,6 +201,7 @@ impl Archive {
         Ok(())
     }
 
+    /// Writes metadata to disk to finish changes to an archive.
     pub fn finalize(&mut self) -> Result<(), ArchiveError> {
         // Add new file name list
         let serialized_names = dat::serialize_file_names(&self.file_names)?;
@@ -203,6 +216,10 @@ impl Archive {
         Ok(())
     }
 
+    /// Returns the number of used bytes and the total size of the archive's
+    /// .dat file.
+    /// If too much of the .dat file is filled with junk data, `defrag` may be
+    /// called to clean it up.
     pub fn utilized_space(&self) -> Result<(u64, u64), ArchiveError> {
         let total_packed_space = self
             .hed
@@ -219,6 +236,7 @@ impl Archive {
         Ok((total_packed_space, size))
     }
 
+    /// Removes unused space from an archive.
     pub fn defrag(&mut self) -> Result<(), ArchiveError> {
         // Make a new temporary archive
         let tmp_dat =
