@@ -187,7 +187,11 @@ impl Archive {
         // These should always correspond to each other, with there being 1 more
         // entry for the list of file names saved to disk.
         if self.hed.entries.len() != self.file_names.len() + 1 {
-            println!("{} {}", self.hed.entries.len(), self.file_names.len());
+            eprintln!(
+                "Invalid file state {} {}",
+                self.hed.entries.len(),
+                self.file_names.len()
+            );
             return Err(ArchiveError::FileStateError);
         }
 
