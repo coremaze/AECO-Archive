@@ -1,3 +1,8 @@
+use std::{
+    error::Error,
+    fmt::{Display, Formatter},
+};
+
 #[derive(Debug)]
 pub enum ArchiveError {
     HEDReadError,
@@ -17,3 +22,11 @@ pub enum ArchiveError {
     FileStateError,
     TempFileCreateError,
 }
+
+impl Display for ArchiveError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for ArchiveError {}
