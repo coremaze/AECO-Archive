@@ -3,8 +3,7 @@ fn main() {
     let mut builder = cc::Build::new();
     let build = builder
         .files(src.iter())
-        .include("compression/include")
-        .flag("-Wno-sign-compare");
+        .include("compression/include");
     build.compile("libecocompression");
 
     // The bindgen::Builder is the main entry point

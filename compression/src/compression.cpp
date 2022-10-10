@@ -453,7 +453,7 @@ signed int Compressor::Pack(unsigned char *src, unsigned int src_size, unsigned 
         v8 = this->src[v6];
         this->src_index = this->src_word_size + v6;
     }
-    if (v8 != -1) {
+    if ((signed int)v8 != -1) {
         v9 = 0x2000;
         do {
             a4a = v9;
@@ -527,7 +527,7 @@ signed int Compressor::Pack(unsigned char *src, unsigned int src_size, unsigned 
             } while (i != 0x2000);
             this->sub_10001BBB(v9);
             this->sub_10001006(this->gap32404, v7, a4a, a5);
-        } while (v8 != -1);
+        } while ((signed int)v8 != -1);
     }
     v19 = this->initially_8;
     v20 = 7;

@@ -19,9 +19,9 @@ public:
     int amount_to_shift_by;
     int initially_8;
     int initially_0;
-    int src_size;
+    unsigned int src_size;
     unsigned int available_dest_space;
-    int src_index;
+    unsigned int src_index;
     unsigned int filled_dest_space;
     int src_word_size;
     unsigned int some_size_always_1;
