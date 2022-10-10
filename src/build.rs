@@ -4,7 +4,6 @@ fn main() {
     let build = builder
         .files(src.iter())
         .include("compression/include")
-        .flag("-Wno-parentheses")
         .flag("-Wno-sign-compare");
     build.compile("libecocompression");
 

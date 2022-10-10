@@ -252,7 +252,7 @@ signed int Compressor::Unpack(unsigned char *src, unsigned int src_size, unsigne
             }
             v35 = v13 - v12;
             this->amount_to_shift_by = v35;
-            v36 = ((1 << v12) - 1) & (v16 >> v35) | v14;
+            v36 = (((1 << v12) - 1) & (v16 >> v35)) | v14;
             v18 = v36 + 256;
             if (v36 == -1)
                 v18 = -1;
@@ -288,7 +288,7 @@ signed int Compressor::Unpack(unsigned char *src, unsigned int src_size, unsigne
             }
             v17 = v7 - v8;
             this->amount_to_shift_by = v17;
-            v18 = ((1 << v8) - 1) & (v11 >> v17) | v9;
+            v18 = (((1 << v8) - 1) & (v11 >> v17)) | v9;
         }
         if (v18 == -1)
             return 0;
@@ -614,7 +614,7 @@ int Compressor::sub_10001BBB(signed int a2) {
             v23 = 8;
             do {
                 v23 -= v21;
-                v24 = ((1 << v21) - 1) & ((unsigned int)a2 >> v23) | v17;
+                v24 = (((1 << v21) - 1) & ((unsigned int)a2 >> v23)) | v17;
                 if (v20 < v22->available_dest_space) {
                     v22->dest[v20] = v24;
                     v20 = v22->some_size_always_1 + v22->filled_dest_space;
@@ -664,7 +664,7 @@ int Compressor::sub_10001BBB(signed int a2) {
             v12 = v2->filled_dest_space;
             do {
                 v10 -= v7;
-                v13 = ((1 << v7) - 1) & (v11 >> v10) | v8;
+                v13 = (((1 << v7) - 1) & (v11 >> v10)) | v8;
                 if (v12 < v2->available_dest_space) {
                     v2->dest[v12] = v13;
                     v12 = v2->some_size_always_1 + v2->filled_dest_space;
