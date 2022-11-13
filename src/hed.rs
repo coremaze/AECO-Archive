@@ -52,6 +52,13 @@ impl HED {
         if data_len != 0 {
             let mut cursor = Cursor::new(data);
             loop {
+                // Some of the HED files observed do not properly end with an
+                // empty entry, so stop parsing if we're at the end of the file
+                let is_empty = cursor.position() == data_len;
+                if is_empty {
+                    break;
+                }
+
                 let entry = HED::try_deserialize_entry(&mut cursor)
                     .map_err(|_| ArchiveError::HEDFormatError)?;
 
